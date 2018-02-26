@@ -14,8 +14,8 @@ function print_help {
 
 function gencerts {
 
-  openssl req -subj '/O=My Company Name LTD./C=US/CN=localhost' -new -newkey  rsa:4096 -sha256 -days 3650 -x509$
-  openssl req -subj '/O=My Company Name LTD./C=US/CN=localhost' -new -newkey rsa:4096 -sha256 -nodes -out vault$
+  openssl req -subj '/O=My Company Name LTD./C=US/CN=localhost' -new -newkey  rsa:4096 -sha256 -days 3650 -x509 -nodes -keyout root.key -out root.crt
+  openssl req -subj '/O=My Company Name LTD./C=US/CN=localhost' -new -newkey rsa:4096 -sha256 -nodes -out vault.csr -keyout vault.key
   echo 000a > serialfile
   touch certindex
 
@@ -88,13 +88,14 @@ function grab_hashitool {
   rm ./$1.zip
 }
 
+
 function grab_plugin {
   echo "OS: $1"
   echo "Version: $2"
 
-  wget --progress=bar:force -O ./$1.zip https://github.com/immutability-io/vault-ethereum/releases/download/v$2$
-  wget --progress=bar:force -O ./SHA256SUMS https://github.com/immutability-io/vault-ethereum/releases/download$
-  wget --progress=bar:force -O ./SHA256SUMS.sig https://github.com/immutability-io/vault-ethereum/releases/down$
+  wget --progress=bar:force -O ./$1.zip https://github.com/immutability-io/vault-ethereum/releases/download/v$2/vault-ethereum_$2_$1_amd64.zip
+  wget --progress=bar:force -O ./SHA256SUMS https://github.com/immutability-io/vault-ethereum/releases/download/v$2/SHA256SUMS
+  wget --progress=bar:force -O ./SHA256SUMS.sig https://github.com/immutability-io/vault-ethereum/releases/download/v$2/SHA256SUMS.sig
   keybase pgp verify -d ./SHA256SUMS.sig -i ./SHA256SUMS
   if [[ $? -eq 2 ]] ; then
     echo "Plugin Validation Failed: Signature doesn't verify!"
@@ -141,7 +142,7 @@ function initialize {
 function install_plugin {
   vault write sys/plugins/catalog/ethereum-plugin \
         sha_256="$(cat SHA256SUM)" \
-        command="vault-ethereum --ca-cert=$HOME/etc/vault.d/root.crt --client-cert=$HOME/etc/vault.d/vault.crt $
+        command="vault-ethereum --ca-cert=$HOME/etc/vault.d/root.crt --client-cert=$HOME/etc/vault.d/vault.crt --client-key=$HOME/etc/vault.d/vault.key"
 
   if [[ $? -eq 2 ]] ; then
     echo "Vault Catalog update failed!"
